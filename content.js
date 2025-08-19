@@ -179,12 +179,133 @@ function hookSendButton() {
   });
 }
 
+// -------------------- PlanetLM Tooltip
+
+function injectPlanetLLMButtons() {
+  const userArticles = document.querySelectorAll(
+    'article[data-turn="assistant"]'
+  );
+
+  userArticles.forEach((article) => {
+    const buttonContainer = article.querySelector("div");
+
+    if (!buttonContainer || buttonContainer.querySelector(".planetllm-btn"))
+      return;
+
+    const planetButton = document.createElement("button");
+    planetButton.innerText = "Energy usage";
+    planetButton.className = "planetllm-btn";
+
+    planetButton.style.padding = "6px 12px";
+    planetButton.style.marginLeft = "110px";
+    planetButton.style.background = "#4CAF50"; // modern green
+    planetButton.style.color = "#fff";
+    planetButton.style.border = "none";
+    planetButton.style.borderRadius = "6px"; // smooth corners
+    planetButton.style.cursor = "pointer";
+    planetButton.style.fontSize = "12px";
+    planetButton.style.fontFamily = "monospace"; // keeps it clean and readable
+    planetButton.style.position = "relative";
+    planetButton.style.letterSpacing = "0.5px";
+    planetButton.style.transition = "all 0.2s ease";
+
+    // Hover effect: subtle lift and shadow
+    planetButton.onmouseenter = () => {
+      planetButton.style.transform = "translateY(-2px)";
+      planetButton.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    };
+
+    planetButton.onmouseleave = () => {
+      planetButton.style.transform = "translateY(0)";
+      planetButton.style.boxShadow = "none";
+    };
+
+    // Create tooltip
+    const tooltip = document.createElement("div");
+    tooltip.style.position = "absolute";
+    tooltip.style.top = "125%"; // changed from bottom to top
+    tooltip.style.left = "50%";
+    tooltip.style.transform = "translateX(-50%)";
+    tooltip.style.background = "rgba(0,0,0,0.85)";
+    tooltip.style.color = "#fff";
+    tooltip.style.padding = "6px 10px";
+    tooltip.style.borderRadius = "6px";
+    tooltip.style.fontSize = "10px";
+    tooltip.style.whiteSpace = "nowrap";
+    tooltip.style.opacity = "0";
+    tooltip.style.pointerEvents = "none";
+    tooltip.style.transition = "opacity 0.2s ease";
+    planetButton.appendChild(tooltip);
+
+    planetButton.addEventListener("mouseenter", () => {
+      const userArticle = article.previousElementSibling;
+
+      let promptText = "";
+      if (userArticle && userArticle.matches('article[data-turn="user"]')) {
+        promptText = userArticle.innerText.trim();
+
+        // remove "You said:" if it's at the beginning
+        if (promptText.startsWith("You said:")) {
+          promptText = promptText.slice("You said:".length).trim();
+        }
+
+        console.log(promptText);
+      }
+
+      // Fallback if nothing is found
+      if (!promptText) promptText = "";
+
+      const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
+      const energy = tokens * ENERGY_PER_TOKEN;
+      const water = energy * WATER_PER_KWH;
+      const co2 = energy * CO2_PER_KWH;
+
+      tooltip.innerText = `⚡ ${formatEnergy(energy)} | 💧 ${formatWater(
+        water
+      )} | ⛽ ${formatCO2(co2)}`;
+      tooltip.style.opacity = "1";
+    });
+
+    planetButton.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = "0";
+    });
+
+    buttonContainer.appendChild(planetButton);
+  });
+}
+
+// Observe chat for new messages dynamically
+
+// Find the parent container of all user & assistant messages
+// const chatContainer = document.querySelector(
+//   'article[data-turn="user"]'
+// )?.parentElement;
+
+// if (chatContainer) {
+//   const observer = new MutationObserver(() => {
+//     injectPlanetLLMButtons();
+//   });
+
+//   observer.observe(docu, { childList: true, subtree: true });
+
+//   // Initial injection
+//   injectPlanetLLMButtons();
+// } else {
+//   console.warn("PlanetLLM: Chat container not found.");
+// }
+
+// Initial injection
+injectPlanetLLMButtons();
+
 // -------------------- Initialization --------------------
 createInfoBox();
 insertBox();
 hookSendButton();
 
-new MutationObserver(() => insertBox()).observe(document.body, {
+new MutationObserver(() => {
+  injectPlanetLLMButtons();
+  insertBox();
+}).observe(document.body, {
   childList: true,
   subtree: true,
 });

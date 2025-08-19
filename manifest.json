@@ -9,5 +9,9 @@
       "js": ["content.js"],
       "css": ["style.css"]
     }
-  ]
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  }
 }
