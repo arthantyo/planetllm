@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+  "name": "PlanetLLM",
+  "version": "1.0",
+  "description": "Estimate energy, water, and CO₂ footprint per ChatGPT prompt.",
+  "content_scripts": [
+    {
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}

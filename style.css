@@ -1,0 +1,19 @@
+#llm-footprint-toast {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
+  font-family: sans-serif;
+  padding: 8px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+#llm-footprint-toast:hover {
+  opacity: 1;
+}
