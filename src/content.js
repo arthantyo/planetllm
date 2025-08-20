@@ -1,13 +1,20 @@
+import { calculateTokens } from "./token";
 // -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
 const WATER_PER_KWH = 0.5;
 const CO2_PER_KWH = 0.4;
 
-let totalTokens = 0;
-let lastPrompt = "";
 let infoBox = null;
 
 // -------------------- Helpers --------------------
+function debounce(fn, delay) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
 const formatEnergy = (kWh) => {
   if (kWh < 0.001) return `${(kWh * 1000).toFixed(3)} Wh`;
   if (kWh < 1) return `${kWh.toFixed(6)} kWh`;
@@ -156,13 +163,13 @@ function updateFootprint(promptText) {
 
 // -------------------- Hook Send --------------------
 
-function calculateTokens(promptText) {
-  if (!promptText || promptText.trim() === "") return 0; // empty prompt = 0 tokens
+// function calculateTokens(promptText) {
+//   if (!promptText || promptText.trim() === "") return 0; // empty prompt = 0 tokens
 
-  const words = promptText.trim().split(/\s+/).length;
-  const tokens = Math.ceil(words * 1.3);
-  return tokens;
-}
+//   const words = promptText.trim().split(/\s+/).length;
+//   const tokens = Math.ceil(words * 1.3);
+//   return tokens;
+// }
 
 function hookSendButton() {
   const sendBtn = document.querySelector("#composer-submit-button");
@@ -179,9 +186,11 @@ function hookSendButton() {
 
   const triggerUpdate = () => updateFootprint(getCurrentPrompt());
 
-  textArea.addEventListener("input", triggerUpdate); // typing, cut, drag-drop
-  textArea.addEventListener("paste", triggerUpdate); // ensures paste updates
-  textArea.addEventListener("cut", triggerUpdate);
+  const debouncedUpdate = debounce(triggerUpdate, 300);
+
+  textArea.addEventListener("input", debouncedUpdate); // typing, cut, drag-drop
+  textArea.addEventListener("paste", debouncedUpdate); // paste updates
+  textArea.addEventListener("cut", debouncedUpdate); // cut updates
 
   textArea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -298,7 +307,8 @@ function createPlanetButton(promptText = "") {
   // hover logic
   button.addEventListener("mouseenter", () => {
     if (!promptText) return;
-    const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
+    // const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
+    const tokens = calculateTokens(promptText);
     const energy = tokens * ENERGY_PER_TOKEN;
     const water = energy * WATER_PER_KWH;
     const co2 = energy * CO2_PER_KWH;
@@ -366,8 +376,9 @@ function injectPlanetLLMButtons() {
 // -------------------- Initialization --------------------
 createInfoBox();
 insertBox();
-hookSendButton();
 injectPlanetLLMButtons();
+
+hookSendButton(); // if you’re using your existing footprint hook
 
 new MutationObserver(() => {
   injectPlanetLLMButtons();

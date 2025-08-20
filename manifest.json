@@ -6,12 +6,13 @@
   "content_scripts": [
     {
       "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
-      "js": ["content.js"],
+      "js": ["dist/bundle.js"],
       "css": ["style.css"]
     }
   ],
   "background": {
     "scripts": ["background.js"],
     "persistent": false
-  }
+  },
+  "web_accessible_resources": ["encoders/cl100k_base.json", "welcome.html"]
 }

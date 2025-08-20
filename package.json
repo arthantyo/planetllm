@@ -3,17 +3,23 @@
   "version": "1.0.0",
   "description": "",
   "main": "background.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "js-tiktoken": "^1.0.21",
     "tiktoken": "^1.0.22"
   },
   "devDependencies": {
-    "esbuild": "^0.25.9"
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-multi-entry": "^6.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "esbuild": "^0.25.9",
+    "rollup": "^4.46.4"
   }
 }
