@@ -1,3 +1,4 @@
+// -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
 const WATER_PER_KWH = 0.5;
 const CO2_PER_KWH = 0.4;
@@ -25,7 +26,7 @@ const formatCO2 = (kg) => {
   return `${kg.toFixed(3)} kg`;
 };
 
-// -------------------- InfoBox Creation --------------------
+// -------------------- InfoBox --------------------
 function createInfoBox() {
   if (infoBox) return;
 
@@ -40,26 +41,23 @@ function createInfoBox() {
     fontFamily: "monospace",
     marginBottom: "6px",
     cursor: "pointer",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+    transition: "transform 0.2s ease, boxShadow 0.2s ease",
     transformOrigin: "center",
     transform: "scale(0.95)",
     boxShadow: "0 0 0 rgba(0,0,0,0)",
   });
 
-  // Branding
   const branding = document.createElement("div");
   branding.innerText = "planetLLM 🌍";
   branding.style.fontWeight = "bold";
   branding.style.marginBottom = "4px";
   infoBox.appendChild(branding);
 
-  // Usage
   const usage = document.createElement("div");
   usage.id = "planetLLM-usage";
   usage.innerText = "Waiting for your first prompt...";
   infoBox.appendChild(usage);
 
-  // Tokens + Severity
   const tokensDiv = document.createElement("div");
   Object.assign(tokensDiv.style, {
     display: "flex",
@@ -70,16 +68,15 @@ function createInfoBox() {
     color: "#ccc",
   });
 
-  // Tokens text
   const tokensText = document.createElement("span");
   tokensText.id = "planetLLM-tokens-text";
   tokensText.innerText = "Tokens used: 0 Severity:";
   tokensDiv.appendChild(tokensText);
 
-  // Severity dots
   const dotsContainer = document.createElement("div");
   dotsContainer.style.display = "flex";
   dotsContainer.style.gap = "3px";
+
   for (let i = 0; i < 3; i++) {
     const dot = document.createElement("span");
     dot.className = "planetLLM-dot";
@@ -96,18 +93,17 @@ function createInfoBox() {
   tokensDiv.appendChild(dotsContainer);
   infoBox.appendChild(tokensDiv);
 
-  // Hover effect
   infoBox.addEventListener("mouseenter", () => {
     infoBox.style.transform = "scale(1.05)";
     infoBox.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
   });
+
   infoBox.addEventListener("mouseleave", () => {
     infoBox.style.transform = "scale(1)";
     infoBox.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
   });
 }
 
-// -------------------- Insert InfoBox --------------------
 function insertBox() {
   const form = document.querySelector("form[data-type='unified-composer']");
   if (!form) return;
@@ -121,10 +117,9 @@ function insertBox() {
   }
 }
 
-// -------------------- Footprint Update --------------------
+// -------------------- Footprint --------------------
 function updateFootprint(promptText) {
-  const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
-  totalTokens += tokens;
+  const tokens = calculateTokens(promptText);
 
   const energy = tokens * ENERGY_PER_TOKEN;
   const water = energy * WATER_PER_KWH;
@@ -141,23 +136,34 @@ function updateFootprint(promptText) {
   }
 
   if (tokensText) {
-    tokensText.innerText = `Tokens used: ${totalTokens} Severity:`;
+    tokensText.innerText = `Tokens used: ${tokens} Severity:`;
   }
 
   if (dots) {
-    const severityLevel = Math.min(3, Math.ceil(totalTokens / 10));
+    const severityLevel = Math.min(3, Math.ceil(tokens / 10));
     dots.forEach((dot, index) => {
-      if (index < severityLevel) {
-        dot.style.background =
-          index === 0 ? "limegreen" : index === 1 ? "yellow" : "red";
-      } else {
-        dot.style.background = "#333";
-      }
+      dot.style.background =
+        index < severityLevel
+          ? index === 0
+            ? "limegreen"
+            : index === 1
+            ? "yellow"
+            : "red"
+          : "#333";
     });
   }
 }
 
-// -------------------- Hook Send Button --------------------
+// -------------------- Hook Send --------------------
+
+function calculateTokens(promptText) {
+  if (!promptText || promptText.trim() === "") return 0; // empty prompt = 0 tokens
+
+  const words = promptText.trim().split(/\s+/).length;
+  const tokens = Math.ceil(words * 1.3);
+  return tokens;
+}
+
 function hookSendButton() {
   const sendBtn = document.querySelector("#composer-submit-button");
   const textArea = document.querySelector("#prompt-textarea");
@@ -167,145 +173,203 @@ function hookSendButton() {
     return;
   }
 
-  sendBtn.addEventListener("click", () => updateFootprint(lastPrompt));
+  const getCurrentPrompt = () => {
+    return textArea.value ? textArea.value.trim() : textArea.textContent.trim();
+  };
 
-  textArea.addEventListener("keyup", (e) => {
+  const triggerUpdate = () => updateFootprint(getCurrentPrompt());
+
+  textArea.addEventListener("input", triggerUpdate); // typing, cut, drag-drop
+  textArea.addEventListener("paste", triggerUpdate); // ensures paste updates
+  textArea.addEventListener("cut", triggerUpdate);
+
+  textArea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      updateFootprint(lastPrompt);
-    } else {
-      lastPrompt = textArea.textContent;
+      triggerUpdate();
     }
   });
+
+  // Send button click
+  sendBtn.addEventListener("click", triggerUpdate);
 }
 
-// -------------------- PlanetLM Tooltip
+// -------------------- PlanetLLM Buttons --------------------
+function createPlanetButton(promptText = "") {
+  const button = document.createElement("button");
+  button.innerText = "Energy usage";
+  button.className = "planetllm-btn";
+  Object.assign(button.style, {
+    padding: "2px 12px",
+    background: "#4CAF50",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontFamily: "monospace",
+    position: "relative",
+    letterSpacing: "0.5px",
+    transition: "all 0.2s ease",
+    whiteSpace: "nowrap",
+    textAlign: "center",
+    marginBottom: "4px",
+    maxWidth: "120px",
+  });
+
+  // Hover effect
+  button.onmouseenter = () => {
+    button.style.transform = "translateY(-2px)";
+    button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+  };
+  button.onmouseleave = () => {
+    button.style.transform = "translateY(0)";
+    button.style.boxShadow = "none";
+  };
+
+  // Tooltip
+  const tooltip = document.createElement("div");
+  Object.assign(tooltip.style, {
+    position: "absolute",
+    top: "50%", // vertically center relative to parent
+    left: "105%", // a bit to the right of the parent element
+    transform: "translateY(-50%)", // center vertically
+    background: "rgba(0,0,0,0.85)",
+    color: "#fff",
+    padding: "6px 10px",
+    borderRadius: "6px",
+    fontSize: "10px",
+    whiteSpace: "nowrap",
+    opacity: "0",
+    zIndex: "999999999",
+    pointerEvents: "none",
+    transition: "opacity 0.2s ease",
+  });
+
+  const branding = document.createElement("div");
+  branding.innerText = "planetLLM 🌍";
+  branding.style.fontWeight = "bold";
+  branding.style.marginBottom = "4px";
+  tooltip.appendChild(branding);
+
+  const metrics = document.createElement("div");
+  tooltip.appendChild(metrics);
+
+  const metrics2 = document.createElement("div");
+  Object.assign(metrics2.style, {
+    display: "flex",
+    marginTop: "2px",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+  });
+  tooltip.appendChild(metrics2);
+
+  const tokensText = document.createElement("span");
+  tokensText.innerText = "Tokens used: 0";
+  metrics2.appendChild(tokensText);
+
+  const severityText = document.createElement("span");
+  severityText.innerText = "Severity:";
+  metrics2.appendChild(severityText);
+
+  const dotsContainer = document.createElement("div");
+  Object.assign(dotsContainer.style, {
+    display: "flex",
+    gap: "3px",
+  });
+  metrics2.appendChild(dotsContainer);
+
+  const dots = Array.from({ length: 3 }).map(() => {
+    const dot = document.createElement("span");
+    Object.assign(dot.style, {
+      width: "8px",
+      height: "8px",
+      borderRadius: "50%",
+      background: "#333",
+      transition: "background 0.3s ease",
+    });
+    dotsContainer.appendChild(dot);
+    return dot;
+  });
+
+  button.appendChild(tooltip);
+
+  // hover logic
+  button.addEventListener("mouseenter", () => {
+    if (!promptText) return;
+    const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
+    const energy = tokens * ENERGY_PER_TOKEN;
+    const water = energy * WATER_PER_KWH;
+    const co2 = energy * CO2_PER_KWH;
+
+    // update metrics
+    metrics.innerText = `⚡ ${formatEnergy(energy)} | 💧 ${formatWater(
+      water
+    )} | ⛽ ${formatCO2(co2)}`;
+
+    // update tokens
+    tokensText.innerText = `Tokens used: ${tokens}`;
+
+    // update severity dots
+    const severityLevel = Math.min(3, Math.ceil(tokens / 10));
+    dots.forEach((dot, index) => {
+      dot.style.background =
+        index < severityLevel
+          ? index === 0
+            ? "limegreen"
+            : index === 1
+            ? "yellow"
+            : "red"
+          : "#333";
+    });
+
+    tooltip.style.opacity = "1";
+  });
+
+  button.addEventListener("mouseleave", () => {
+    tooltip.style.opacity = "0";
+  });
+
+  return button;
+}
 
 function injectPlanetLLMButtons() {
   const userArticles = document.querySelectorAll(
     'article[data-turn="assistant"]'
   );
-
   userArticles.forEach((article) => {
-    const buttonContainer = article.querySelector("div");
+    const container = article.querySelector("div");
+    if (!container || container.querySelector(".planetllm-btn")) return;
 
-    if (!buttonContainer || buttonContainer.querySelector(".planetllm-btn"))
-      return;
-
-    const planetButton = document.createElement("button");
-    planetButton.innerText = "Energy usage";
-    planetButton.className = "planetllm-btn";
-
-    planetButton.style.padding = "6px 12px";
-    planetButton.style.marginLeft = "110px";
-    planetButton.style.background = "#4CAF50"; // modern green
-    planetButton.style.color = "#fff";
-    planetButton.style.border = "none";
-    planetButton.style.borderRadius = "6px"; // smooth corners
-    planetButton.style.cursor = "pointer";
-    planetButton.style.fontSize = "12px";
-    planetButton.style.fontFamily = "monospace"; // keeps it clean and readable
-    planetButton.style.position = "relative";
-    planetButton.style.letterSpacing = "0.5px";
-    planetButton.style.transition = "all 0.2s ease";
-
-    // Hover effect: subtle lift and shadow
-    planetButton.onmouseenter = () => {
-      planetButton.style.transform = "translateY(-2px)";
-      planetButton.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
-    };
-
-    planetButton.onmouseleave = () => {
-      planetButton.style.transform = "translateY(0)";
-      planetButton.style.boxShadow = "none";
-    };
-
-    // Create tooltip
-    const tooltip = document.createElement("div");
-    tooltip.style.position = "absolute";
-    tooltip.style.top = "125%"; // changed from bottom to top
-    tooltip.style.left = "50%";
-    tooltip.style.transform = "translateX(-50%)";
-    tooltip.style.background = "rgba(0,0,0,0.85)";
-    tooltip.style.color = "#fff";
-    tooltip.style.padding = "6px 10px";
-    tooltip.style.borderRadius = "6px";
-    tooltip.style.fontSize = "10px";
-    tooltip.style.whiteSpace = "nowrap";
-    tooltip.style.opacity = "0";
-    tooltip.style.pointerEvents = "none";
-    tooltip.style.transition = "opacity 0.2s ease";
-    planetButton.appendChild(tooltip);
-
-    planetButton.addEventListener("mouseenter", () => {
-      const userArticle = article.previousElementSibling;
-
-      let promptText = "";
-      if (userArticle && userArticle.matches('article[data-turn="user"]')) {
-        promptText = userArticle.innerText.trim();
-
-        // remove "You said:" if it's at the beginning
-        if (promptText.startsWith("You said:")) {
-          promptText = promptText.slice("You said:".length).trim();
-        }
-
-        console.log(promptText);
-      }
-
-      // Fallback if nothing is found
-      if (!promptText) promptText = "";
-
-      const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
-      const energy = tokens * ENERGY_PER_TOKEN;
-      const water = energy * WATER_PER_KWH;
-      const co2 = energy * CO2_PER_KWH;
-
-      tooltip.innerText = `⚡ ${formatEnergy(energy)} | 💧 ${formatWater(
-        water
-      )} | ⛽ ${formatCO2(co2)}`;
-      tooltip.style.opacity = "1";
+    Object.assign(container.style, {
+      display: "flex",
+      justifyContent: "flex-end", // align to the right
+      alignItems: "center", // vertically center
+      gap: "4px", // space between buttons if multiple
+      flexDirection: "column",
     });
 
-    planetButton.addEventListener("mouseleave", () => {
-      tooltip.style.opacity = "0";
-    });
+    const userArticle = article.previousElementSibling;
+    let promptText = "";
+    if (userArticle && userArticle.matches('article[data-turn="user"]')) {
+      promptText = userArticle.innerText.trim();
+      if (promptText.startsWith("You said:"))
+        promptText = promptText.slice(9).trim();
+    }
 
-    buttonContainer.appendChild(planetButton);
+    const btn = createPlanetButton(promptText);
+    container.appendChild(btn);
   });
 }
-
-// Observe chat for new messages dynamically
-
-// Find the parent container of all user & assistant messages
-// const chatContainer = document.querySelector(
-//   'article[data-turn="user"]'
-// )?.parentElement;
-
-// if (chatContainer) {
-//   const observer = new MutationObserver(() => {
-//     injectPlanetLLMButtons();
-//   });
-
-//   observer.observe(docu, { childList: true, subtree: true });
-
-//   // Initial injection
-//   injectPlanetLLMButtons();
-// } else {
-//   console.warn("PlanetLLM: Chat container not found.");
-// }
-
-// Initial injection
-injectPlanetLLMButtons();
 
 // -------------------- Initialization --------------------
 createInfoBox();
 insertBox();
 hookSendButton();
+injectPlanetLLMButtons();
 
 new MutationObserver(() => {
   injectPlanetLLMButtons();
   insertBox();
-}).observe(document.body, {
-  childList: true,
-  subtree: true,
-});
+}).observe(document.body, { childList: true, subtree: true });
