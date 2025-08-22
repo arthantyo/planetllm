@@ -9,7 +9,7 @@ export default {
   output: {
     file: "dist/bundle.js",
     format: "iife",
-    name: "PlanetLLM",
+    name: "planetLLM",
   },
   plugins: [
     multiEntry(),

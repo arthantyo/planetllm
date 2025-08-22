@@ -1,9 +1,13 @@
 import { calculateTokens } from "./token";
+import { openUsageModal } from "./usageModal";
+import { getProvider } from "./utils";
+import { getTotals, saveTotals } from "./storage";
 // -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
 const WATER_PER_KWH = 0.5;
 const CO2_PER_KWH = 0.4;
 
+let latestInput = "";
 let infoBox = null;
 
 // -------------------- Helpers --------------------
@@ -32,6 +36,16 @@ const formatCO2 = (kg) => {
   if (kg < 1) return `${(kg * 1000).toFixed(2)} g`;
   return `${kg.toFixed(3)} kg`;
 };
+
+function calculateFootprint(promptText) {
+  const tokens = calculateTokens(promptText);
+
+  const energy = tokens * ENERGY_PER_TOKEN;
+  const water = energy * WATER_PER_KWH;
+  const co2 = energy * CO2_PER_KWH;
+
+  return { tokens, energy, water, co2 };
+}
 
 // -------------------- InfoBox --------------------
 function createInfoBox() {
@@ -109,6 +123,10 @@ function createInfoBox() {
     infoBox.style.transform = "scale(1)";
     infoBox.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
   });
+
+  infoBox.addEventListener("click", () => {
+    openUsageModal();
+  });
 }
 
 function insertBox() {
@@ -125,12 +143,44 @@ function insertBox() {
 }
 
 // -------------------- Footprint --------------------
-function updateFootprint(promptText) {
-  const tokens = calculateTokens(promptText);
+// function updateFootprint(promptText) {
+//   const tokens = calculateTokens(promptText);
 
-  const energy = tokens * ENERGY_PER_TOKEN;
-  const water = energy * WATER_PER_KWH;
-  const co2 = energy * CO2_PER_KWH;
+//   const energy = tokens * ENERGY_PER_TOKEN;
+//   const water = energy * WATER_PER_KWH;
+//   const co2 = energy * CO2_PER_KWH;
+
+//   const usageDiv = document.querySelector("#planetLLM-usage");
+//   const tokensText = document.querySelector("#planetLLM-tokens-text");
+//   const dots = document.querySelectorAll(".planetLLM-dot");
+
+//   if (usageDiv) {
+//     usageDiv.innerText = `⚡ ${formatEnergy(energy)} | 💧 ${formatWater(
+//       water
+//     )} | ⛽ ${formatCO2(co2)}`;
+//   }
+
+//   if (tokensText) {
+//     tokensText.innerText = `Tokens used: ${tokens} Severity:`;
+//   }
+
+//   if (dots) {
+//     const severityLevel = Math.min(3, Math.ceil(tokens / 10));
+//     dots.forEach((dot, index) => {
+//       dot.style.background =
+//         index < severityLevel
+//           ? index === 0
+//             ? "limegreen"
+//             : index === 1
+//             ? "yellow"
+//             : "red"
+//           : "#333";
+//     });
+//   }
+// }
+
+function previewFootprint(promptText) {
+  const { tokens, energy, water, co2 } = calculateFootprint(promptText);
 
   const usageDiv = document.querySelector("#planetLLM-usage");
   const tokensText = document.querySelector("#planetLLM-tokens-text");
@@ -161,6 +211,21 @@ function updateFootprint(promptText) {
   }
 }
 
+function saveFootprint(promptText) {
+  const { tokens, energy, water, co2 } = calculateFootprint(promptText);
+
+  const provider = getProvider();
+  console.log(provider);
+  const totals = getTotals(provider);
+
+  totals.tokens += tokens;
+  totals.energy += energy;
+  totals.water += water;
+  totals.co2 += co2;
+
+  saveTotals(provider, totals);
+}
+
 // -------------------- Hook Send --------------------
 
 // function calculateTokens(promptText) {
@@ -172,58 +237,79 @@ function updateFootprint(promptText) {
 // }
 
 function hookSendButton() {
-  const sendBtn = document.querySelector("#composer-submit-button");
+  const sendBtn = document.querySelector("button#composer-submit-button");
   const textArea = document.querySelector("#prompt-textarea");
+  const textAreaContent = document.querySelector("#prompt-textarea > p");
+
+  console.log(textAreaContent.textContent);
 
   if (!sendBtn || !textArea) {
     setTimeout(hookSendButton, 1000);
     return;
   }
 
-  const getCurrentPrompt = () => {
-    return textArea.value ? textArea.value.trim() : textArea.textContent.trim();
-  };
+  const getCurrentPrompt = () =>
+    textArea.value ? textArea.value.trim() : textArea.textContent.trim();
 
-  const triggerUpdate = () => updateFootprint(getCurrentPrompt());
+  const debouncedPreview = debounce(
+    () => previewFootprint(getCurrentPrompt()),
+    300
+  );
 
-  const debouncedUpdate = debounce(triggerUpdate, 300);
+  // 🔹 just preview while typing/pasting
+  textArea.addEventListener("input", (e) => {
+    latestInput = e.target.innerText;
 
-  textArea.addEventListener("input", debouncedUpdate); // typing, cut, drag-drop
-  textArea.addEventListener("paste", debouncedUpdate); // paste updates
-  textArea.addEventListener("cut", debouncedUpdate); // cut updates
+    console.log(e.target.innerText);
+    debouncedPreview();
+  });
+  textArea.addEventListener("paste", debouncedPreview);
+  textArea.addEventListener("cut", debouncedPreview);
 
+  // 🔹 submit on Enter
   textArea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      triggerUpdate();
+      const prompt = latestInput;
+      previewFootprint(prompt);
+      console.log("saving");
+      saveFootprint(prompt); // ✅ only save here
     }
   });
 
-  // Send button click
-  sendBtn.addEventListener("click", triggerUpdate);
+  // 🔹 submit on click
+  sendBtn.addEventListener("click", () => {
+    const prompt = latestInput;
+    previewFootprint(prompt);
+    console.log("saving");
+
+    saveFootprint(prompt); // ✅ only save here
+  });
 }
 
 // -------------------- PlanetLLM Buttons --------------------
 function createPlanetButton(promptText = "") {
   const button = document.createElement("button");
-  button.innerText = "Energy usage";
+  button.innerText = "Energy usage ";
   button.className = "planetllm-btn";
+
   Object.assign(button.style, {
-    padding: "2px 12px",
-    background: "#4CAF50",
+    padding: "6px 14px",
+    backgroundColor: "#111",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "8px",
     cursor: "pointer",
-    fontSize: "12px",
+    fontSize: "13px",
     fontFamily: "monospace",
     position: "relative",
     letterSpacing: "0.5px",
-    transition: "all 0.2s ease",
+    transition: "all 0.25s ease",
     whiteSpace: "nowrap",
     textAlign: "center",
-    marginBottom: "4px",
-    maxWidth: "120px",
+    marginBottom: "6px",
+    maxWidth: "150px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
   });
 
   // Hover effect

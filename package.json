@@ -1,11 +1,10 @@
 {
-  "name": "planetlm",
+  "name": "planetllm",
   "version": "1.0.0",
   "description": "",
-  "main": "background.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup --config"
   },
   "keywords": [],
   "author": "",
