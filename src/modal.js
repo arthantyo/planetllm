@@ -1,3 +1,6 @@
+import { getTotals } from "./storage";
+import { formatCO2, formatEnergy, formatWater } from "./utils";
+
 // ---------------- Modal ----------------
 export function openUsageModal() {
   // Remove existing modal if any
@@ -62,15 +65,11 @@ export function openUsageModal() {
     contentArea.innerHTML = ""; // clear previous content
 
     // ---------------- Fake data ----------------
-    const fakeData = {
-      ChatGPT: { values: [0.012, 0.006, 0.004], totalTokens: 1200 },
-      Claude: { values: [0.008, 0.004, 0.003], totalTokens: 900 },
-      Gemini: { values: [0.015, 0.007, 0.005], totalTokens: 1500 },
-    };
+    const totals = getTotals(llm.toLowerCase());
 
-    const llmData = fakeData[llm] || fakeData.ChatGPT;
-    const values = llmData.values;
-    const totalTokens = llmData.totalTokens;
+    // Example usage values (you can calculate dynamically if needed)
+    const values = [totals.energy, totals.water, totals.co2]; // use stored numbers
+    const totalTokens = totals.tokens;
 
     // ---------------- Usage Cards ----------------
     const metrics = ["Energy", "Water", "Carbon"];
@@ -97,24 +96,31 @@ export function openUsageModal() {
       const label = document.createElement("strong");
       label.innerText = `${icons[i]} ${metric}`;
       const value = document.createElement("div");
-      value.innerText = "0 " + units[i];
+      if (metric === "Energy") value.innerText = formatEnergy(values[i]);
+      if (metric === "Water") value.innerText = formatWater(values[i]);
+      if (metric === "Carbon") value.innerText = formatCO2(values[i]);
       value.style.transition = "all 1s ease";
 
       card.appendChild(label);
       card.appendChild(value);
       usageContainer.appendChild(card);
 
-      // Animate value increment
       let current = 0;
       const target = values[i];
-      const step = target / 30;
+      const stepCount = 30; // number of steps in the animation
+      const step = target / stepCount;
+
       const interval = setInterval(() => {
         current += step;
         if (current >= target) {
           current = target;
           clearInterval(interval);
         }
-        value.innerText = current.toFixed(3) + " " + units[i];
+
+        // Format based on metric
+        if (metrics[i] === "Energy") value.innerText = formatEnergy(current);
+        if (metrics[i] === "Water") value.innerText = formatWater(current);
+        if (metrics[i] === "Carbon") value.innerText = formatCO2(current);
       }, 30);
     });
 
@@ -165,7 +171,7 @@ export function openUsageModal() {
 
     // ---------------- Total Tokens ----------------
     const tokenDiv = document.createElement("div");
-    tokenDiv.innerHTML = `<strong>Total Tokens:</strong> ${totalTokens}`;
+    tokenDiv.innerHTML = `<strong>Total Tokens Used:</strong> ${totalTokens}`;
     contentArea.appendChild(tokenDiv);
 
     // ---------------- Reminder Settings ----------------

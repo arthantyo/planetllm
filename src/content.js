@@ -1,7 +1,8 @@
 import { calculateTokens } from "./token";
-import { openUsageModal } from "./usageModal";
-import { getProvider } from "./utils";
+import { openUsageModal } from "./modal";
+import { getProvider, formatCO2, formatEnergy, formatWater } from "./utils";
 import { getTotals, saveTotals } from "./storage";
+
 // -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
 const WATER_PER_KWH = 0.5;
@@ -18,24 +19,6 @@ function debounce(fn, delay) {
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
 }
-
-const formatEnergy = (kWh) => {
-  if (kWh < 0.001) return `${(kWh * 1000).toFixed(3)} Wh`;
-  if (kWh < 1) return `${kWh.toFixed(6)} kWh`;
-  return `${(kWh / 1000).toFixed(6)} MWh`;
-};
-
-const formatWater = (L) => {
-  if (L < 0.001) return `${(L * 1_000_000).toFixed(1)} μL`;
-  if (L < 1) return `${(L * 1000).toFixed(2)} mL`;
-  return `${L.toFixed(3)} L`;
-};
-
-const formatCO2 = (kg) => {
-  if (kg < 0.001) return `${(kg * 1_000_000).toFixed(1)} mg`;
-  if (kg < 1) return `${(kg * 1000).toFixed(2)} g`;
-  return `${kg.toFixed(3)} kg`;
-};
 
 function calculateFootprint(promptText) {
   const tokens = calculateTokens(promptText);
