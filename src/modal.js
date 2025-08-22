@@ -64,17 +64,13 @@ export function openUsageModal() {
   function renderContent(llm) {
     contentArea.innerHTML = ""; // clear previous content
 
-    // ---------------- Fake data ----------------
     const totals = getTotals(llm.toLowerCase());
 
-    // Example usage values (you can calculate dynamically if needed)
     const values = [totals.energy, totals.water, totals.co2]; // use stored numbers
     const totalTokens = totals.tokens;
 
-    // ---------------- Usage Cards ----------------
     const metrics = ["Energy", "Water", "Carbon"];
     const icons = ["⚡", "💧", "⛽"];
-    const units = ["kWh", "L", "kg"];
 
     const usageContainer = document.createElement("div");
     Object.assign(usageContainer.style, {

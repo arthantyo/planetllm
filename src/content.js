@@ -2,6 +2,7 @@ import { calculateTokens } from "./token";
 import { openUsageModal } from "./modal";
 import { getProvider, formatCO2, formatEnergy, formatWater } from "./utils";
 import { getTotals, saveTotals } from "./storage";
+import { showToast, checkReminder } from "./toast";
 
 // -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
@@ -198,7 +199,6 @@ function saveFootprint(promptText) {
   const { tokens, energy, water, co2 } = calculateFootprint(promptText);
 
   const provider = getProvider();
-  console.log(provider);
   const totals = getTotals(provider);
 
   totals.tokens += tokens;
@@ -207,6 +207,8 @@ function saveFootprint(promptText) {
   totals.co2 += co2;
 
   saveTotals(provider, totals);
+
+  checkReminder(totals);
 }
 
 // -------------------- Hook Send --------------------
@@ -222,9 +224,6 @@ function saveFootprint(promptText) {
 function hookSendButton() {
   const sendBtn = document.querySelector("button#composer-submit-button");
   const textArea = document.querySelector("#prompt-textarea");
-  const textAreaContent = document.querySelector("#prompt-textarea > p");
-
-  console.log(textAreaContent.textContent);
 
   if (!sendBtn || !textArea) {
     setTimeout(hookSendButton, 1000);
@@ -243,7 +242,6 @@ function hookSendButton() {
   textArea.addEventListener("input", (e) => {
     latestInput = e.target.innerText;
 
-    console.log(e.target.innerText);
     debouncedPreview();
   });
   textArea.addEventListener("paste", debouncedPreview);
@@ -255,7 +253,6 @@ function hookSendButton() {
       e.preventDefault();
       const prompt = latestInput;
       previewFootprint(prompt);
-      console.log("saving");
       saveFootprint(prompt); // ✅ only save here
     }
   });
@@ -264,9 +261,8 @@ function hookSendButton() {
   sendBtn.addEventListener("click", () => {
     const prompt = latestInput;
     previewFootprint(prompt);
-    console.log("saving");
 
-    saveFootprint(prompt); // ✅ only save here
+    saveFootprint(prompt);
   });
 }
 
