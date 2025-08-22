@@ -1,6 +1,4 @@
-// toast.js
 export function showToast(message) {
-  // Remove existing toast if any
   const existing = document.getElementById("planetLLM-toast");
   if (existing) existing.remove();
 
@@ -44,10 +42,8 @@ export function showToast(message) {
   toast.appendChild(closeBtn);
   document.body.appendChild(toast);
 
-  // Auto remove after 5 seconds
   setTimeout(() => toast.remove(), 5000);
 
-  // Add fade-in animation if not already in CSS
   const style = document.createElement("style");
   style.innerHTML = `
     @keyframes fadeIn { from {opacity:0; transform: translateY(20px);} to {opacity:1; transform: translateY(0);} }

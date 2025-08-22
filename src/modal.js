@@ -3,7 +3,6 @@ import { formatCO2, formatEnergy, formatWater } from "./utils";
 
 // ---------------- Modal ----------------
 export function openUsageModal() {
-  // Remove existing modal if any
   const existing = document.getElementById("planetLLM-modal");
   if (existing) existing.remove();
 
@@ -60,13 +59,12 @@ export function openUsageModal() {
     padding: "20px",
   });
 
-  // Function to render content based on selected LLM
   function renderContent(llm) {
-    contentArea.innerHTML = ""; // clear previous content
+    contentArea.innerHTML = "";
 
     const totals = getTotals(llm.toLowerCase());
 
-    const values = [totals.energy, totals.water, totals.co2]; // use stored numbers
+    const values = [totals.energy, totals.water, totals.co2];
     const totalTokens = totals.tokens;
 
     const metrics = ["Energy", "Water", "Carbon"];
@@ -103,7 +101,7 @@ export function openUsageModal() {
 
       let current = 0;
       const target = values[i];
-      const stepCount = 30; // number of steps in the animation
+      const stepCount = 30;
       const step = target / stepCount;
 
       const interval = setInterval(() => {
@@ -113,7 +111,6 @@ export function openUsageModal() {
           clearInterval(interval);
         }
 
-        // Format based on metric
         if (metrics[i] === "Energy") value.innerText = formatEnergy(current);
         if (metrics[i] === "Water") value.innerText = formatWater(current);
         if (metrics[i] === "Carbon") value.innerText = formatCO2(current);
@@ -241,7 +238,6 @@ export function openUsageModal() {
     contentArea.appendChild(reminderContainer);
   }
 
-  // Sidebar buttons
   llms.forEach((llm) => {
     const btn = document.createElement("button");
     btn.innerText = llm;
@@ -256,15 +252,10 @@ export function openUsageModal() {
     });
 
     btn.addEventListener("click", () => {
-      // Remove "selected" style from all buttons
       sidebar.querySelectorAll("button").forEach((b) => {
         b.style.background = "#111";
       });
-
-      // Apply selected style to the clicked button
-      btn.style.background = "#444"; // change to any highlight color you like
-
-      // Render content for the selected LLM
+      btn.style.background = "#444";
       renderContent(llm);
     });
 
@@ -293,7 +284,7 @@ export function openUsageModal() {
 
   document.body.appendChild(modal);
 
-  renderContent("ChatGPT"); // default LLM
+  renderContent("ChatGPT");
 
   // ---------------- Animations ----------------
   const style = document.createElement("style");

@@ -2,7 +2,7 @@ import { calculateTokens } from "./token";
 import { openUsageModal } from "./modal";
 import { getProvider, formatCO2, formatEnergy, formatWater } from "./utils";
 import { getTotals, saveTotals } from "./storage";
-import { showToast, checkReminder } from "./toast";
+import { checkReminder } from "./toast";
 
 // -------------------- Constants --------------------
 const ENERGY_PER_TOKEN = 0.000002;
@@ -238,7 +238,6 @@ function hookSendButton() {
     300
   );
 
-  // 🔹 just preview while typing/pasting
   textArea.addEventListener("input", (e) => {
     latestInput = e.target.innerText;
 
@@ -247,17 +246,15 @@ function hookSendButton() {
   textArea.addEventListener("paste", debouncedPreview);
   textArea.addEventListener("cut", debouncedPreview);
 
-  // 🔹 submit on Enter
   textArea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       const prompt = latestInput;
       previewFootprint(prompt);
-      saveFootprint(prompt); // ✅ only save here
+      saveFootprint(prompt);
     }
   });
 
-  // 🔹 submit on click
   sendBtn.addEventListener("click", () => {
     const prompt = latestInput;
     previewFootprint(prompt);
@@ -305,9 +302,9 @@ function createPlanetButton(promptText = "") {
   const tooltip = document.createElement("div");
   Object.assign(tooltip.style, {
     position: "absolute",
-    top: "50%", // vertically center relative to parent
-    left: "105%", // a bit to the right of the parent element
-    transform: "translateY(-50%)", // center vertically
+    top: "50%",
+    left: "105%",
+    transform: "translateY(-50%)",
     background: "rgba(0,0,0,0.85)",
     color: "#fff",
     padding: "6px 10px",
@@ -369,7 +366,6 @@ function createPlanetButton(promptText = "") {
 
   button.appendChild(tooltip);
 
-  // hover logic
   button.addEventListener("mouseenter", () => {
     if (!promptText) return;
     // const tokens = Math.ceil(promptText.split(/\s+/).length * 1.3);
@@ -378,15 +374,12 @@ function createPlanetButton(promptText = "") {
     const water = energy * WATER_PER_KWH;
     const co2 = energy * CO2_PER_KWH;
 
-    // update metrics
     metrics.innerText = `⚡ ${formatEnergy(energy)} | 💧 ${formatWater(
       water
     )} | ⛽ ${formatCO2(co2)}`;
 
-    // update tokens
     tokensText.innerText = `Tokens used: ${tokens}`;
 
-    // update severity dots
     const severityLevel = Math.min(3, Math.ceil(tokens / 10));
     dots.forEach((dot, index) => {
       dot.style.background =
@@ -419,9 +412,9 @@ function injectPlanetLLMButtons() {
 
     Object.assign(container.style, {
       display: "flex",
-      justifyContent: "flex-end", // align to the right
-      alignItems: "center", // vertically center
-      gap: "4px", // space between buttons if multiple
+      justifyContent: "flex-end",
+      alignItems: "center",
+      gap: "4px",
       flexDirection: "column",
     });
 
@@ -443,7 +436,7 @@ createInfoBox();
 insertBox();
 injectPlanetLLMButtons();
 
-hookSendButton(); // if you’re using your existing footprint hook
+hookSendButton();
 
 new MutationObserver(() => {
   injectPlanetLLMButtons();
